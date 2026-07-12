@@ -1,0 +1,319 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Upheaval Pro';
+  src: url(/assets/fonts/upheaval_pro.ttf);
+}
+
+@font-face {
+  font-family: 'VCR OSD Mono';
+  src: url(/assets/fonts/vcr_osd_mono.ttf);
+}
+
+@font-face {
+  font-family: 'Munro';
+  src: url(/assets/game/fonts/Munro.ttf);
+}
+
+@font-face {
+  font-family: 'Munro-Narrow';
+  src: url(/assets/game/fonts/Munro-Narrow.ttf);
+}
+
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url(/assets/game/fonts/PressStart2P-Regular.ttf);
+}
+
+@layer base {
+  body {
+    @apply bg-bg text-ink font-sans leading-relaxed antialiased;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+@layer components {
+  .pixel-card {
+    border-width: 12px;
+    border-image-source: url(/assets/ui/box.svg);
+    border-image-repeat: stretch;
+    border-image-slice: 12.5%;
+    background: #1e293b;
+  }
+
+  .pixel-box {
+    border-width: 12px;
+    border-image-source: url(/assets/ui/box.svg);
+    border-image-repeat: stretch;
+    border-image-slice: 12.5%;
+  }
+
+  .pixel-desc {
+    border-width: 56px;
+    border-image-source: url(/assets/ui/desc.svg);
+    border-image-repeat: stretch;
+    border-image-slice: 28%;
+  }
+
+  .pixel-chats {
+    border-width: 24px;
+    border-image-source: url(/assets/ui/chats.svg);
+    border-image-repeat: stretch;
+    border-image-slice: 40%;
+  }
+
+  .pixel-button {
+    border-width: 1em;
+    border-image-source: url(/assets/ui/button.svg);
+    border-image-repeat: stretch;
+    border-image-slice: 25%;
+    cursor: pointer;
+    background: #3a3247;
+    transition: all 0.1s ease;
+  }
+
+  .pixel-button:hover {
+    opacity: 0.8;
+  }
+
+  .pixel-button:active {
+    border-image-source: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1' y='2' width='14' height='13' fill='%23181425'/%3E%3Crect x='2' y='1' width='12' height='15' fill='%23181425'/%3E%3Crect y='3' width='16' height='11' fill='%23181425'/%3E%3Crect x='2' y='14' width='12' height='1' fill='%23262B44'/%3E%3Crect x='1' y='3' width='14' height='11' fill='%233A4466'/%3E%3Crect x='2' y='2' width='12' height='9' fill='%233A4466'/%3E%3Crect x='1' y='13' width='1' height='1' fill='%23262B44'/%3E%3Crect x='14' y='13' width='1' height='1' fill='%23262B44'/%3E%3C/svg%3E%0A");
+    transform: translateY(2px);
+  }
+
+  .pixel-frame {
+    border-width: 36px;
+    border-image-source: url(/assets/ui/frame.svg);
+    border-image-repeat: stretch;
+    border-image-slice: 25%;
+  }
+
+  .pixel-tag {
+    @apply inline-block px-3 py-1 rounded-md text-xs font-semibold;
+    border: 2px solid #334155;
+    background: rgba(56, 189, 248, 0.1);
+  }
+
+  .pixelated {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .card {
+    @apply bg-bg2 border border-rule rounded-xl p-5 transition hover:-translate-y-1 hover:border-accent;
+  }
+
+  .tag {
+    @apply inline-block px-3 py-1 rounded-md text-xs font-semibold;
+  }
+
+  .glow-text {
+    text-shadow: 0 0.1em 0 rgba(0, 0, 0, 0.5), 0 0 10px rgba(56, 189, 248, 0.5);
+  }
+
+  .game-title {
+    background: linear-gradient(to bottom, #fec742, #dd7c42);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0px 0.08em 0px #6e2146);
+  }
+
+  .progress-bar {
+    border: 3px solid #171421;
+    background: #1e293b;
+  }
+
+  .progress-bar-fill {
+    background: repeating-linear-gradient(135deg, #38bdf8, #38bdf8 5px, #2563eb 5px, #2563eb 10px);
+    background-size: 200% 100%;
+    animation: moveStripes 1s linear infinite;
+  }
+
+  @keyframes moveStripes {
+    to {
+      background-position: calc(100% + 28px) 0;
+    }
+  }
+
+  .game-panel {
+    @apply bg-gradient-to-br from-clay-800 to-brown-800 rounded-lg border-4 border-clay-600;
+    box-shadow: 
+      inset 0 0 20px rgba(0,0,0,0.3),
+      0 4px 0 rgba(0,0,0,0.3);
+  }
+
+  .game-button {
+    @apply bg-gradient-to-b from-clay-600 to-clay-800 text-white px-4 py-2 rounded border-2 border-clay-500;
+    @apply font-display text-sm tracking-wider uppercase;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+    transition: all 0.1s;
+  }
+
+  .game-button:hover {
+    @apply bg-gradient-to-b from-clay-500 to-clay-700;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 0 rgba(0,0,0,0.3);
+  }
+
+  .game-button:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+  }
+
+  .game-label {
+    @apply text-xs font-body text-muted uppercase tracking-wider;
+  }
+
+  .game-stat {
+    @apply font-display text-2xl text-white;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  }
+
+  .heart-container {
+    display: flex;
+    gap: 2px;
+  }
+
+  .heart {
+    width: 16px;
+    height: 16px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+  }
+
+  .heart.full {
+    background-image: url(/assets/game/images/heart_full.png);
+  }
+
+  .heart.empty {
+    background-image: url(/assets/game/images/heart_empty.png);
+  }
+
+  .heart.half {
+    background-image: url(/assets/game/images/heart_half.png);
+  }
+
+  .star-container {
+    display: flex;
+    gap: 2px;
+  }
+
+  .star {
+    width: 16px;
+    height: 16px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+  }
+
+  .star.filled {
+    background-image: url(/assets/game/images/crystal.png);
+  }
+
+  .star.empty {
+    opacity: 0.3;
+    background-image: url(/assets/game/images/crystal.png);
+  }
+
+  .map-tile {
+    @apply relative overflow-hidden rounded border-2 border-clay-600 transition-all duration-300;
+    aspect-ratio: 1;
+  }
+
+  .map-tile:hover {
+    @apply border-accent transform scale-105;
+    z-index: 10;
+  }
+
+  .diary-entry {
+    @apply bg-bg2 rounded-lg border border-rule p-4 transition-all duration-300;
+  }
+
+  .diary-entry:hover {
+    @apply border-accent bg-clay-800/50;
+  }
+
+  .notification-item {
+    @apply bg-bg2 rounded-lg border border-rule p-3 flex items-start gap-3 transition-all;
+  }
+
+  .notification-item:hover {
+    @apply border-accent;
+  }
+
+  .dialog-box {
+    @apply bg-clay-800/95 border-4 border-clay-600 rounded-lg p-4;
+    box-shadow: 
+      inset 0 0 20px rgba(0,0,0,0.5),
+      0 8px 0 rgba(0,0,0,0.3),
+      0 0 30px rgba(56,189,248,0.2);
+  }
+
+  .typing-cursor::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .bounce-animation {
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  .sparkle-animation {
+    animation: sparkle 1.5s ease-in-out infinite;
+  }
+
+  @keyframes sparkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+  }
+
+  .pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(56,189,248,0.5); }
+    50% { box-shadow: 0 0 25px rgba(56,189,248,0.8); }
+  }
+}
