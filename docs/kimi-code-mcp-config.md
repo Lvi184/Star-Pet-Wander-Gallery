@@ -184,17 +184,18 @@ ls "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo
 
 ---
 
-# Claude AI MCP 配置
+# Claude AI MCP 配置（讯飞模型替代）
 
 ## 概述
 
-通过 Anthropic API 调用 Claude AI 的 MCP 服务器配置。
+通过 Anthropic API 兼容接口调用 Claude AI 的 MCP 服务器配置，使用讯飞 Maas Coding API 作为后端模型服务。
 
 ## 环境信息
 
 - **MCP 配置路径**: `C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\`
-- **依赖**: 需要配置 `ANTHROPIC_API_KEY` 环境变量
-- **默认模型**: `claude-3-sonnet-20240229`
+- **API 密钥**: `ANTHROPIC_AUTH_TOKEN`（讯飞平台 token）
+- **API Base URL**: `https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic`
+- **默认模型**: `astron-code-latest`
 
 ## 配置步骤
 
@@ -206,50 +207,86 @@ mkdir -p "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f71
 
 ### 2. 创建 SERVER_METADATA.json
 
-```bash
-cat > "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\SERVER_METADATA.json" << 'EOF'
+```json
 {
   "server_name": "mcp_claude",
-  "command": "python",
-  "args": ["C:\\Users\\jiaendu\\.trae-cn\\mcps\\s_全民宠物_星宠漫游馆_-5a93f713\\solo_agent\\mcp_claude\\claude_server.py"],
-  "env": {
-    "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
-  }
+  "description": "Claude AI MCP Server (Xunfei ModelScope)"
 }
-EOF
 ```
 
-### 3. 创建 Claude 服务器脚本
+### 3. 创建 Claude 服务器脚本（claude_server.py）
 
-```bash
-cat > "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\claude_server.py" << 'EOF'
+```python
 import sys
 import json
-import http.client
 import os
+import http.client
+import ssl
+from urllib.parse import urlparse
 
-API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-BASE_URL = "api.anthropic.com"
+API_KEY = os.environ.get("ANTHROPIC_AUTH_TOKEN", os.environ.get("ANTHROPIC_API_KEY"))
+BASE_URL = os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
+MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-3-sonnet-20240229")
 API_VERSION = "2023-06-01"
-MODEL = "claude-3-sonnet-20240229"
+
+parsed_url = urlparse(BASE_URL)
+HOST = parsed_url.hostname
+PORT = parsed_url.port or 443
+PATH_PREFIX = parsed_url.path.rstrip('/')
+
+TOOLS = [
+    {
+        "name": "claude_prompt",
+        "description": "Send a prompt to Claude AI for intelligent response.",
+        "parameters": {
+            "type": "object",
+            "properties": {"prompt": {"type": "string", "description": "The prompt to send to Claude AI."}},
+            "required": ["prompt"]
+        }
+    },
+    {
+        "name": "claude_code",
+        "description": "Get code generation help from Claude AI.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "language": {"type": "string", "description": "Programming language"},
+                "task": {"type": "string", "description": "What you want to do"},
+                "code": {"type": "string", "description": "Existing code (optional)"}
+            },
+            "required": ["language", "task"]
+        }
+    },
+    {
+        "name": "claude_writer",
+        "description": "Get writing assistance from Claude AI.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "topic": {"type": "string", "description": "Topic to write about"},
+                "style": {"type": "string", "description": "Writing style"},
+                "length": {"type": "string", "description": "Desired length"}
+            },
+            "required": ["topic"]
+        }
+    }
+]
 
 
 def call_claude(prompt):
     if not API_KEY:
-        return json.dumps({"error": "ANTHROPIC_API_KEY environment variable not set"})
+        return {"error": "ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY environment variable not set"}
 
     try:
-        conn = http.client.HTTPSConnection(BASE_URL)
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        conn = http.client.HTTPSConnection(HOST, PORT, context=context)
         
         payload = json.dumps({
             "model": MODEL,
             "max_tokens": 4096,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
+            "messages": [{"role": "user", "content": prompt}]
         })
         
         headers = {
@@ -258,7 +295,8 @@ def call_claude(prompt):
             "anthropic-version": API_VERSION
         }
         
-        conn.request("POST", "/v1/messages", payload, headers)
+        full_path = f"{PATH_PREFIX}/v1/messages" if PATH_PREFIX else "/v1/messages"
+        conn.request("POST", full_path, payload, headers)
         response = conn.getresponse()
         data = response.read().decode("utf-8")
         conn.close()
@@ -267,109 +305,154 @@ def call_claude(prompt):
         
         if "content" in result and result["content"]:
             content = result["content"][0]["text"]
-            return json.dumps({"response": content, "model": MODEL})
+            return {"response": content, "model": MODEL}
         else:
-            return json.dumps({"error": "Invalid response from API", "raw": data})
+            return {"error": "Invalid response from API", "raw": data}
             
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        return {"error": str(e)}
+
+
+def handle_request(request):
+    method = request.get("method")
+    params = request.get("params", {})
+    request_id = request.get("id")
+
+    response = {"jsonrpc": "2.0", "id": request_id}
+
+    if method == "initialize":
+        response["result"] = {"name": "mcp_claude", "description": "Claude AI MCP Server", "version": "1.0.0"}
+    elif method == "tools/list":
+        response["result"] = TOOLS
+    elif method == "tools/call":
+        tool_name = params.get("name")
+        tool_params = params.get("arguments", {})
+
+        if tool_name == "claude_prompt":
+            prompt = tool_params.get("prompt", "")
+            result = call_claude(prompt)
+            response["result"] = {"content": json.dumps(result)}
+        elif tool_name == "claude_code":
+            language = tool_params.get("language", "")
+            task = tool_params.get("task", "")
+            code = tool_params.get("code", "")
+            prompt = f"请帮我用{language}语言实现以下功能：{task}"
+            if code:
+                prompt += f"\n现有代码：\n{code}"
+            result = call_claude(prompt)
+            response["result"] = {"content": json.dumps(result)}
+        elif tool_name == "claude_writer":
+            topic = tool_params.get("topic", "")
+            style = tool_params.get("style", "")
+            length = tool_params.get("length", "")
+            prompt = f"请以{style}风格写一篇关于'{topic}'的文章，长度要求：{length}"
+            result = call_claude(prompt)
+            response["result"] = {"content": json.dumps(result)}
+        else:
+            response["error"] = {"code": -32601, "message": f"Method not found: {tool_name}"}
+    else:
+        response["error"] = {"code": -32601, "message": f"Method not found: {method}"}
+
+    return response
 
 
 def main():
-    if len(sys.argv) < 2:
-        print(json.dumps({"error": "No prompt provided"}))
-        return
-    
-    prompt = " ".join(sys.argv[1:])
-    result = call_claude(prompt)
-    print(result)
+    while True:
+        try:
+            line = sys.stdin.readline()
+            if not line:
+                break
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                request = json.loads(line)
+                response = handle_request(request)
+                print(json.dumps(response), flush=True)
+            except json.JSONDecodeError:
+                print(json.dumps({"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}}), flush=True)
+        except EOFError:
+            break
 
 
 if __name__ == "__main__":
     main()
-EOF
 ```
 
 ### 4. 创建工具配置文件
 
 #### claude_prompt.json - AI 提示工具
 
-```bash
-cat > "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\tools\claude_prompt.json" << 'EOF'
+```json
 {
   "name": "claude_prompt",
-  "description": "Send a prompt to Claude AI (Anthropic) for intelligent response.",
-  "parameters": {
+  "description": "Send a prompt to Claude AI for intelligent response.",
+  "arguments": {
     "type": "object",
     "properties": {
-      "prompt": {
-        "type": "string",
-        "description": "The prompt to send to Claude AI."
-      }
+      "prompt": {"type": "string", "description": "The prompt to send to Claude AI."}
     },
-    "required": ["prompt"]
-  },
-  "returns": {
-    "type": "string",
-    "description": "Claude's response"
+    "required": ["prompt"],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
   }
 }
-EOF
 ```
 
 #### claude_code.json - 代码生成工具
 
-```bash
-cat > "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\tools\claude_code.json" << 'EOF'
+```json
 {
   "name": "claude_code",
   "description": "Get code generation help from Claude AI.",
-  "parameters": {
+  "arguments": {
     "type": "object",
     "properties": {
       "language": {"type": "string", "description": "Programming language"},
       "task": {"type": "string", "description": "What you want to do"},
       "code": {"type": "string", "description": "Existing code (optional)"}
     },
-    "required": ["language", "task"]
-  },
-  "returns": {"type": "string", "description": "Generated code"}
+    "required": ["language", "task"],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
 }
-EOF
 ```
 
 #### claude_writer.json - 写作辅助工具
 
-```bash
-cat > "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\tools\claude_writer.json" << 'EOF'
+```json
 {
   "name": "claude_writer",
   "description": "Get writing assistance from Claude AI.",
-  "parameters": {
+  "arguments": {
     "type": "object",
     "properties": {
       "topic": {"type": "string", "description": "Topic to write about"},
       "style": {"type": "string", "description": "Writing style"},
       "length": {"type": "string", "description": "Desired length"}
     },
-    "required": ["topic"]
-  },
-  "returns": {"type": "string", "description": "Generated text"}
+    "required": ["topic"],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
 }
-EOF
 ```
 
 ## 使用方法
 
-### 配置 API Key
+### 配置环境变量（系统级）
 
-```bash
-# 设置环境变量（Windows PowerShell）
-$env:ANTHROPIC_API_KEY = "your_api_key_here"
+需要先设置系统级环境变量，TRAE 启动 MCP 服务器时才能访问：
 
-# 永久设置（Windows）
-setx ANTHROPIC_API_KEY "your_api_key_here"
+```powershell
+# 永久设置（Windows，需要重启 TRAE 生效）
+setx ANTHROPIC_AUTH_TOKEN "<your-xunfei-auth-token>"
+setx ANTHROPIC_BASE_URL "https://maas-coding-api.cn-huabei-1.xf-yun.com/anthropic"
+setx ANTHROPIC_MODEL "astron-code-latest"
 ```
+
+> **注意**: 从 `~/.claude/settings.json` 文件中获取 `ANTHROPIC_AUTH_TOKEN` 的值
 
 ### 在 TRAE 中调用 Claude AI
 
@@ -402,18 +485,33 @@ run_mcp(
 # 验证配置文件
 ls "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\"
 
-# 验证 API Key
-echo $env:ANTHROPIC_API_KEY
+# 测试服务器初始化
+echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | python "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\claude_server.py"
+
+# 测试工具列表
+echo '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}' | python "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\claude_server.py"
+```bash
+# 测试 API 调用（需先设置环境变量）
+echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"claude_prompt","arguments":{"prompt":"Hello"}},"id":3}' | python "C:\Users\jiaendu\.trae-cn\mcps\s_全民宠物_星宠漫游馆_-5a93f713\solo_agent\mcp_claude\claude_server.py"
 ```
+
+## 测试结果
+
+| 测试项 | 状态 | 说明 |
+|--------|------|------|
+| `initialize` | ✅ | 服务器初始化正常 |
+| `tools/list` | ✅ | 工具列表返回正常 |
+| `claude_prompt` | ✅ | 成功调用讯飞模型，返回中文问候语 |
+| `claude_code` | ✅ | 成功生成 Python 计算器代码 |
 
 ## 注意事项
 
-1. **API Key**: 需要在 Anthropic 官网获取 API Key
-2. **网络要求**: 确保网络连通性
-3. **费用**: 使用 Claude API 会产生费用，请留意用量
-4. **模型选择**: 当前默认使用 claude-3-sonnet，可在 claude_server.py 中修改
+1. **API Key**: 使用讯飞 Maas Coding 平台的 token，配置在 `~/.claude/settings.json` 中
+2. **网络要求**: 确保网络连通性，支持 SSL 连接
+3. **模型**: 当前使用 `astron-code-latest`，可通过 `ANTHROPIC_MODEL` 环境变量修改
+4. **SSL 证书**: 由于讯飞 API 证书问题，服务器已禁用 SSL 证书验证
 
 ## 相关链接
 
-- **Anthropic 官网**: https://www.anthropic.com
-- **Claude API 文档**: https://docs.anthropic.com/claude/reference/getting-started-with-the-api
+- **讯飞 Maas Coding**: https://maas.xfyun.cn/
+- **Claude Code 配置**: `~/.claude/settings.json`

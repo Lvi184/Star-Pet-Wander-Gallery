@@ -39,4 +39,44 @@ export const GAME_EVENTS = {
   CONTROL_CHANGE: 'control-change',
   DEATH_EVENT: 'death-event',
   REWIND: 'rewind',
+
+  SPAWN_PET: 'spawn-pet',
+  MOVE_PET: 'move-pet',
+  FOCUS_PET: 'focus-pet',
+  CONTROL_SWITCH: 'control-switch',
+  SCENE_READY: 'scene-ready',
+  PET_POSITION_UPDATE: 'pet-position-update',
+  PET_ACTIVITY: 'pet-activity',
+  ENVIRONMENT_EVENT: 'environment-event',
 };
+
+export interface SpawnPetData {
+  pets: Array<{ id: string; name: string; species: string; current_region?: string | null }>;
+}
+
+export interface MovePetData {
+  petId: string;
+  region: string;
+}
+
+export interface FocusPetData {
+  petId: string;
+}
+
+export interface ControlSwitchData {
+  petId: string;
+  controllerType: 'player' | 'agent';
+}
+
+export interface PetPositionData {
+  petId: string;
+  x: number;
+  y: number;
+  region?: string;
+}
+
+export interface EnvironmentEventData {
+  eventName: string;
+  eventType: string;
+  action: 'start' | 'end';
+}

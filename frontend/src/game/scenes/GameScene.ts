@@ -18,10 +18,21 @@ import { getSelectorData } from '../utils/utils';
 import { selectGameSetters } from '../zustand/game/selectGameData';
 import { regionConfigs, npcData, portalLocations } from '../config';
 import { REGION_NAMES } from '../constants';
+import { PetEventBridge } from '../bridges/PetEventBridge';
+import { EnvironmentFXSystem } from '../systems/EnvironmentFXSystem';
+import { eventBus, GAME_EVENTS } from '../eventBus';
+
+const EVENT_TYPE_MAP: Record<string, string> = {
+  meteor: 'meteor_shower',
+  tide: 'qi_tide',
+  starfall: 'star_fall',
+  shadow: 'shadow_storm',
+};
 
 export default class GameScene extends Scene {
-  private sceneRef: any;
-  private currentRegion: string = 'qingqiu';
+  private _currentRegion: string = 'qingqiu';
+  private petEventBridge!: PetEventBridge;
+  private environmentFX!: EnvironmentFXSystem;
 
   constructor() {
     super('GameScene');
@@ -29,15 +40,13 @@ export default class GameScene extends Scene {
 
   init(data: { location?: string }) {
     if (data.location) {
-      this.currentRegion = data.location;
+      this._currentRegion = data.location;
     }
   }
 
   preload() {}
 
   create() {
-    this.sceneRef = this;
-
     const { addGameCameraSizeUpdateCallback } = getSelectorData(selectGameSetters);
 
     handleCreateControls(this);
@@ -63,10 +72,35 @@ export default class GameScene extends Scene {
     this.physics.add.collider(this.heroSprite, customColliders);
 
     this.addRegionLabel();
+
+    this.petEventBridge = new PetEventBridge(this);
+    this.petEventBridge.init();
+
+    this.environmentFX = new EnvironmentFXSystem(this);
+    this.setupEnvironmentEventListener();
+  }
+
+  private setupEnvironmentEventListener() {
+    eventBus.on(GAME_EVENTS.ENVIRONMENT_EVENT, (data: any) => {
+      const fxType = EVENT_TYPE_MAP[data.eventType] || data.eventType;
+      if (data.action === 'start') {
+        this.environmentFX.addEvent({
+          type: fxType,
+          intensity: 1,
+          duration: 4000,
+        });
+      } else if (data.action === 'end') {
+        this.environmentFX.removeEvent(fxType);
+      }
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.environmentFX.destroy();
+    });
   }
 
   createNPCs() {
-    const npcs = npcData[this.currentRegion] || [];
+    const npcs = npcData[this._currentRegion] || [];
 
     npcs.forEach((npcItem) => {
       createNPC(this, npcItem);
@@ -74,7 +108,7 @@ export default class GameScene extends Scene {
   }
 
   createPortals() {
-    const portals = portalLocations[this.currentRegion] || [];
+    const portals = portalLocations[this._currentRegion] || [];
 
     portals.forEach((portal) => {
       createPortal(this, portal.x, portal.y, portal.targetRegion);
@@ -82,8 +116,8 @@ export default class GameScene extends Scene {
   }
 
   addRegionLabel() {
-    const regionName = REGION_NAMES[this.currentRegion] || this.currentRegion;
-    const regionConfig = regionConfigs[this.currentRegion];
+    const regionName = REGION_NAMES[this._currentRegion] || this._currentRegion;
+    const regionConfig = regionConfigs[this._currentRegion];
 
     if (regionConfig) {
       this.cameras.main.setBackgroundColor(regionConfig.backgroundColor);
@@ -109,6 +143,14 @@ export default class GameScene extends Scene {
       this.npcs.getChildren().forEach((npc: any) => {
         handleNPCMovement(this, npc);
       });
+    }
+
+    if (this.petEventBridge) {
+      this.petEventBridge.updatePlayerControl(delta);
+    }
+
+    if (this.environmentFX) {
+      this.environmentFX.update();
     }
   }
 }
