@@ -45,7 +45,7 @@ const DiaryTimeline: React.FC<DiaryTimelineProps> = ({ diaries, onDiaryClick, co
   return (
     <div className={`space-y-2 ${compact ? '' : ''}`}>
       {diaries.length === 0 ? (
-        <div className="text-center py-4 text-xs text-cosmos-500">
+        <div className="text-center py-4 text-xs text-clay-500 font-body">
           暂无漫游记录
         </div>
       ) : (
@@ -53,35 +53,35 @@ const DiaryTimeline: React.FC<DiaryTimelineProps> = ({ diaries, onDiaryClick, co
           {sortedDates.map((date) => (
             <div key={date}>
               <button
-                className={`text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                  selectedDate === date ? 'text-cosmos-300' : 'text-cosmos-500 hover:text-cosmos-300'
+                className={`text-xs font-body flex items-center gap-1.5 transition-colors ${
+                  selectedDate === date ? 'text-clay-300' : 'text-clay-500 hover:text-clay-300'
                 }`}
                 onClick={() => setSelectedDate(selectedDate === date ? null : date)}
               >
                 <span>{selectedDate === date ? '▼' : '▶'}</span>
                 {date}
-                <span className="text-[10px] bg-cosmos-900/60 px-1.5 py-0.5 rounded-full border border-cosmos-800/50">
+                <span className="text-[10px] bg-clay-900/80 px-1.5 py-0.5 border-2 border-clay-700">
                   {groupedDiaries[date].length}篇
                 </span>
               </button>
 
               {(selectedDate === date || !selectedDate) && (
-                <div className="space-y-1.5 pl-3 border-l-2 border-cosmos-700/50">
+                <div className="space-y-1.5 pl-3 border-l-4 border-clay-700">
                   {groupedDiaries[date].map((diary) => (
                     <div
                       key={diary.id}
-                      className={`p-2 rounded-lg bg-cosmos-900/40 border border-cosmos-800/40 cursor-pointer transition-all hover:bg-cosmos-800/50 hover:border-cosmos-600/50 ${compact ? 'text-xs' : ''}`}
+                      className={`p-2 bg-clay-900/60 border-2 border-clay-700/60 cursor-pointer transition-all hover:bg-clay-800/60 hover:border-clay-600 ${compact ? 'text-xs' : ''}`}
                       onClick={() => onDiaryClick?.(diary)}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-cosmos-100 truncate">
+                        <span className="font-display text-brown-200 truncate shadow-solid">
                           {diary.title}
                         </span>
                         <span className="text-xs">
                           {moodEmojis[diary.mood || '平静'] || '😌'}
                         </span>
                       </div>
-                      <p className="text-cosmos-400 line-clamp-2 leading-relaxed">
+                      <p className="text-clay-400 line-clamp-2 leading-relaxed font-body">
                         {diary.content}
                       </p>
                     </div>

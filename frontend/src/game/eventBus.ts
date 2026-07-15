@@ -39,6 +39,7 @@ export const GAME_EVENTS = {
   CONTROL_CHANGE: 'control-change',
   DEATH_EVENT: 'death-event',
   REWIND: 'rewind',
+  PET_EVENT: 'pet-event',
 
   SPAWN_PET: 'spawn-pet',
   MOVE_PET: 'move-pet',

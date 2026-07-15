@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from db.database import get_db
 from models.character import Character
 from models.event import PetEvent
@@ -11,7 +12,47 @@ from services.death_system import DeathSystem
 from datetime import datetime
 from typing import Dict, Any
 
-router = APIRouter(prefix="/character", tags=["角色"])
+router = APIRouter(tags=["角色"])
+
+
+@router.get("/user/{user_id}")
+async def get_user_characters(user_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Character).where(Character.user_id == user_id))
+    characters = result.scalars().all()
+    return [c.to_dict() for c in characters]
+
+
+@router.post("")
+async def create_character(data: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    user_id = data.get("user_id", "demo-user")
+    name = data.get("name", "小星")
+    species = data.get("species", "星灵猫")
+    personality = data.get("personality", "灵动狡黠")
+
+    character = Character(
+        id=Character.generate_id(),
+        user_id=user_id,
+        name=name,
+        species=species,
+        personality={"traits": {"cheerful": 0.8, "curiosity": 0.7}},
+        mood=80,
+        energy=100,
+        spiritual_power=10,
+        cultivation_level=1,
+        current_region="qingqiu",
+        health=100,
+        status="alive",
+        controller_type="agent",
+        controller_version=1,
+        affinity_map={},
+        goals=[],
+    )
+
+    db.add(character)
+    await db.commit()
+    await db.refresh(character)
+
+    return character.to_dict()
 
 
 @router.get("/{char_id}/status")
@@ -100,10 +141,17 @@ async def heartbeat(char_id: str, db: AsyncSession = Depends(get_db)):
 @router.get("/{char_id}/events")
 async def get_character_events(char_id: str, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
-    results = await db.execute(
-        select(PetEvent).where(PetEvent.char_id == char_id).order_by(PetEvent.timestamp.desc()).limit(20)
-    )
-    return [e.to_dict() for e in results.scalars().all()]
+    try:
+        results = await db.execute(
+            select(PetEvent).where(PetEvent.char_id == char_id).order_by(PetEvent.timestamp.desc()).limit(20)
+        )
+        events = results.scalars().all()
+        return [e.to_dict() for e in events]
+    except Exception as e:
+        import traceback
+        print(f"Error in get_character_events: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{char_id}/destiny")

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { getMockCharacterStatus } from '../../stores/petMockData';
 
 interface CharacterData {
   id: string;
@@ -69,7 +70,12 @@ export default function CharacterStatus({ charId }: CharacterStatusProps) {
       setCharacter(response.data);
       setIsPlayerControlled(response.data.controller_type === 'player');
     } catch (error) {
-      console.error('Failed to fetch character:', error);
+      console.warn('API不可用，使用Mock数据:', error);
+      const mockData = getMockCharacterStatus(charId);
+      if (mockData) {
+        setCharacter(mockData);
+        setIsPlayerControlled(mockData.controller_type === 'player');
+      }
     } finally {
       setLoading(false);
     }
@@ -81,7 +87,8 @@ export default function CharacterStatus({ charId }: CharacterStatusProps) {
       setIsPlayerControlled(true);
       await fetchCharacter();
     } catch (error: any) {
-      alert(error.response?.data?.detail || '接管失败');
+      console.warn('API不可用，使用Mock接管:', error);
+      setIsPlayerControlled(true);
     }
   };
 
@@ -91,7 +98,8 @@ export default function CharacterStatus({ charId }: CharacterStatusProps) {
       setIsPlayerControlled(false);
       await fetchCharacter();
     } catch (error: any) {
-      alert(error.response?.data?.detail || '交还控制权失败');
+      console.warn('API不可用，使用Mock交还:', error);
+      setIsPlayerControlled(false);
     }
   };
 

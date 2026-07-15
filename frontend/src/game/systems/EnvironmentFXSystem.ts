@@ -97,8 +97,11 @@ export class EnvironmentFXSystem {
   }
 
   private createParticleEffect(event: EnvironmentEvent) {
-    const centerX = event.x || this.scene.cameras.main.centerX;
-    const centerY = event.y || this.scene.cameras.main.centerY;
+    const camera = this.scene.cameras.main;
+    if (!camera) return;
+    
+    const centerX = event.x || camera.centerX;
+    const centerY = event.y || camera.centerY;
 
     switch (event.type) {
       case 'qi_tide':
@@ -149,8 +152,11 @@ export class EnvironmentFXSystem {
   }
 
   private createMeteorShowerEffect(intensity: number) {
+    const camera = this.scene.cameras.main;
+    if (!camera) return;
+    
     const emitter = this.scene.add.particles(0, 0, 'meteor_particle', {
-      x: { min: 0, max: this.scene.cameras.main.width },
+      x: { min: 0, max: camera.width },
       y: -50,
       speedY: { min: 200, max: 400 },
       angle: { min: 45, max: 135 },

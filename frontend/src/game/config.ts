@@ -7,9 +7,9 @@ export const regionConfigs: Record<string, RegionConfig> = {
     name: REGION_NAMES[REGIONS.QINGQIU],
     description: REGION_DESCRIPTIONS[REGIONS.QINGQIU],
     mapKey: 'qingqiuMap',
-    tilesetKeys: ['village'],
-    tilesetNames: ['village'],
-    layerNames: ['Ground', 'Buildings'],
+    tilesetKeys: ['rpg-tileset'],
+    tilesetNames: ['rpg-tileset'],
+    layerNames: ['terrain', 'bridge', 'deco'],
     collisionProperty: 'collision',
     backgroundColor: '#2d5a27',
   },
@@ -202,7 +202,7 @@ export const portalLocations: Record<string, { x: number; y: number; targetRegio
 };
 
 export const mapAssetPaths: Record<string, string> = {
-  qingqiuMap: '/assets/game/maps/sample_map.json',
+  qingqiuMap: '/assets/game/maps/tilemap.json',
   kunlunMap: '/assets/game/maps/sample_map.json',
   donghaiMap: '/assets/game/maps/sample_map.json',
   youduMap: '/assets/game/maps/sample_indoor.json',
@@ -214,6 +214,7 @@ export const tilesetAssetPaths: Record<string, string> = {
   village: '/assets/game/tilesets/village.png',
   city: '/assets/game/tilesets/city.png',
   objects: '/assets/game/tilesets/objects.png',
+  'rpg-tileset': '/assets/game/tilesets/rpg-tileset.png',
 };
 
 export const atlasAssetPaths: Record<string, { image: string; json: string }> = {

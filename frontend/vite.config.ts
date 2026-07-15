@@ -11,7 +11,7 @@ export default defineConfig({
         target: 'http://localhost:8001',
         changeOrigin: true,
       },
-      '/pet': {
+      '/pet/': {
         target: 'http://localhost:8001',
         changeOrigin: true,
       },
@@ -48,6 +48,9 @@ export default defineConfig({
         target: 'http://localhost:8001',
         changeOrigin: true,
       },
-    }
+    },
+    fs: {
+      allow: ['..'],
+    },
   }
 })

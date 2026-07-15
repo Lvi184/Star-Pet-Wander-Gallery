@@ -21,3 +21,21 @@ async def get_world_map(db: AsyncSession = Depends(get_db)):
         }
         for r in regions
     ]
+
+
+@router.get("/events/active")
+async def get_active_events():
+    return [
+        {
+            "id": "meteor",
+            "name": "✨ 流星雨",
+            "description": "天降灵气，灵兽灵力充盈",
+            "event_type": "meteor",
+        },
+        {
+            "id": "tide",
+            "name": "🌊 灵气潮汐",
+            "description": "天地灵气翻涌，奇遇概率提升",
+            "event_type": "tide",
+        },
+    ]

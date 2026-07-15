@@ -8,7 +8,7 @@ interface WorldEvent {
   event_type?: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || '/';
 
 const MOCK_EVENTS: WorldEvent[] = [
   { id: 'meteor', name: '✨ 流星雨', description: '天降灵气，灵兽灵力充盈', event_type: 'meteor' },
@@ -33,7 +33,7 @@ export default function WorldEventBanner() {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch(`${API_BASE}/world/events/active`);
+      const res = await fetch(`${API_BASE}world/events/active`);
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data.events || [];
@@ -70,11 +70,13 @@ export default function WorldEventBanner() {
           action: 'end',
         });
       }
-      eventBus.emit(GAME_EVENTS.ENVIRONMENT_EVENT, {
-        eventName: current.name,
-        eventType: current.event_type,
-        action: 'start',
-      });
+      setTimeout(() => {
+        eventBus.emit(GAME_EVENTS.ENVIRONMENT_EVENT, {
+          eventName: current.name,
+          eventType: current.event_type,
+          action: 'start',
+        });
+      }, 1000);
       prevEventRef.current = key;
     }
   }, [currentIndex, events]);
@@ -84,19 +86,19 @@ export default function WorldEventBanner() {
   const current = events[currentIndex];
 
   return (
-    <div className="glass px-4 py-2 flex items-center justify-between gap-4">
+    <div className="pixel-box px-4 py-2 flex items-center justify-between gap-4" style={{ background: '#181425' }}>
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <span className="text-xl shrink-0">🌠</span>
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-gold-300 truncate">
+          <div className="font-display text-sm text-gold-300 truncate shadow-solid">
             {current.name}
           </div>
-          <div className="text-xs text-cosmos-300 truncate">
+          <div className="text-xs text-clay-300 truncate font-body">
             {current.description}
           </div>
         </div>
       </div>
-      <div className="text-xs text-cosmos-400 shrink-0">
+      <div className="text-xs text-clay-500 shrink-0 font-body">
         {currentIndex + 1}/{events.length}
       </div>
     </div>

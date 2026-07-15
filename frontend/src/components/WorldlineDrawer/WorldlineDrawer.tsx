@@ -42,7 +42,7 @@ export default function WorldlineDrawer() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-cosmos-400 text-sm">加载中...</div>
+        <div className="text-clay-400 text-sm font-body">加载中...</div>
       </div>
     );
   }
@@ -50,29 +50,29 @@ export default function WorldlineDrawer() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-cosmos-900/60 rounded-lg p-3 border border-cosmos-800/50">
-          <div className="text-xs text-cosmos-400 mb-1">当前区域</div>
-          <div className="text-sm text-white">{getRegionInfo(currentRegion).name}</div>
+        <div className="bg-clay-900/80 p-3 border-2 border-clay-700">
+          <div className="text-xs text-clay-400 mb-1 font-body">当前区域</div>
+          <div className="text-sm text-brown-100 font-display shadow-solid">{getRegionInfo(currentRegion).name}</div>
         </div>
-        <div className="bg-cosmos-900/60 rounded-lg p-3 border border-cosmos-800/50">
-          <div className="text-xs text-cosmos-400 mb-1">今日命运</div>
-          <div className="text-sm font-medium" style={{ color: FATE_COLORS[fateLevel] }}>
+        <div className="bg-clay-900/80 p-3 border-2 border-clay-700">
+          <div className="text-xs text-clay-400 mb-1 font-body">今日命运</div>
+          <div className="text-sm font-display" style={{ color: FATE_COLORS[fateLevel] }}>
             {FATE_NAMES[fateLevel]}
           </div>
         </div>
-        <div className="bg-cosmos-900/60 rounded-lg p-3 border border-cosmos-800/50">
-          <div className="text-xs text-cosmos-400 mb-1">生存天数</div>
-          <div className="text-lg text-gold-400 font-semibold">{day}</div>
+        <div className="bg-clay-900/80 p-3 border-2 border-clay-700">
+          <div className="text-xs text-clay-400 mb-1 font-body">生存天数</div>
+          <div className="text-lg text-gold-400 font-display shadow-solid">{day}</div>
         </div>
-        <div className="bg-cosmos-900/60 rounded-lg p-3 border border-cosmos-800/50">
-          <div className="text-xs text-cosmos-400 mb-1">总事件数</div>
-          <div className="text-lg text-cosmos-300 font-semibold">{sortedEvents.length}</div>
+        <div className="bg-clay-900/80 p-3 border-2 border-clay-700">
+          <div className="text-xs text-clay-400 mb-1 font-body">总事件数</div>
+          <div className="text-lg text-clay-300 font-display shadow-solid">{sortedEvents.length}</div>
         </div>
       </div>
 
-      <div className="bg-cosmos-900/40 rounded-lg border border-cosmos-800/50">
-        <div className="px-3 py-2 border-b border-cosmos-800/50">
-          <h3 className="text-sm font-semibold text-cosmos-200">📅 时间线</h3>
+      <div className="bg-clay-900/80 border-2 border-clay-700">
+        <div className="px-3 py-2 border-b-2 border-clay-700">
+          <h3 className="font-display text-sm text-brown-200 shadow-solid">📅 时间线</h3>
         </div>
         <div className="max-h-40 overflow-y-auto">
           {days.length > 0 ? (
@@ -81,15 +81,15 @@ export default function WorldlineDrawer() {
                 <button
                   key={dayNum}
                   onClick={() => setSelectedDay(selectedDay === dayNum ? null : dayNum)}
-                  className={`w-full p-2 rounded text-left text-xs transition-all ${
+                  className={`w-full p-2 text-left text-xs transition-all ${
                     selectedDay === dayNum
-                      ? 'bg-cosmos-700/50 text-cosmos-100'
-                      : 'text-cosmos-400 hover:bg-cosmos-800/50'
+                      ? 'bg-clay-700/60 text-brown-100 border-2 border-clay-600'
+                      : 'text-clay-300 hover:bg-clay-800/60 border-2 border-transparent'
                   }`}
                 >
                   <div className="flex justify-between items-center">
-                    <span>第 {dayNum} 天</span>
-                    <span className="text-[10px] bg-cosmos-900/60 px-1.5 py-0.5 rounded-full border border-cosmos-800/50">
+                    <span className="font-body">第 {dayNum} 天</span>
+                    <span className="text-[10px] bg-clay-900/80 px-1.5 py-0.5 border-2 border-clay-700">
                       {getEventsByDay(dayNum).length}
                     </span>
                   </div>
@@ -97,14 +97,14 @@ export default function WorldlineDrawer() {
               ))}
             </div>
           ) : (
-            <div className="px-3 py-6 text-center text-xs text-cosmos-500">暂无事件记录</div>
+            <div className="px-3 py-6 text-center text-xs text-clay-500 font-body">暂无事件记录</div>
           )}
         </div>
       </div>
 
-      <div className="bg-cosmos-900/40 rounded-lg border border-cosmos-800/50">
-        <div className="px-3 py-2 border-b border-cosmos-800/50">
-          <h3 className="text-sm font-semibold text-cosmos-200">📜 事件记录</h3>
+      <div className="bg-clay-900/80 border-2 border-clay-700">
+        <div className="px-3 py-2 border-b-2 border-clay-700">
+          <h3 className="font-display text-sm text-brown-200 shadow-solid">📜 事件记录</h3>
         </div>
         <div className="max-h-60 overflow-y-auto">
           {selectedDay ? (
@@ -112,10 +112,10 @@ export default function WorldlineDrawer() {
               {getEventsByDay(selectedDay).map((event) => (
                 <div
                   key={event.id}
-                  className="p-2 rounded bg-cosmos-800/40 border border-cosmos-700/50"
+                  className="p-2 bg-clay-800/60 border-2 border-clay-700"
                 >
-                  <div className="text-sm text-cosmos-100 mb-1">{event.event}</div>
-                  <div className="flex items-center gap-2 text-[10px] text-cosmos-400">
+                  <div className="text-sm text-brown-100 mb-1 font-body">{event.event}</div>
+                  <div className="flex items-center gap-2 text-[10px] text-clay-400 font-body">
                     <span>📍 {getRegionInfo(event.region as RegionId).name}</span>
                     <span>第 {event.day} 天</span>
                   </div>
@@ -124,21 +124,21 @@ export default function WorldlineDrawer() {
             </div>
           ) : (
             <div className="p-4">
-              <div className="text-xs text-cosmos-500 mb-3">选择一天查看详细事件</div>
+              <div className="text-xs text-clay-500 mb-3 font-body">选择一天查看详细事件</div>
               <div className="space-y-2">
                 {sortedEvents.slice(0, 5).map((event) => (
                   <div
                     key={event.id}
-                    className="p-2 rounded bg-cosmos-800/30 border border-cosmos-700/30"
+                    className="p-2 bg-clay-800/40 border-2 border-clay-700/50"
                   >
-                    <div className="text-xs text-cosmos-200">{event.event}</div>
-                    <div className="text-[10px] text-cosmos-500 mt-0.5">
+                    <div className="text-xs text-brown-200 font-body">{event.event}</div>
+                    <div className="text-[10px] text-clay-500 mt-0.5 font-body">
                       第 {event.day} 天 · {getRegionInfo(event.region as RegionId).name}
                     </div>
                   </div>
                 ))}
                 {sortedEvents.length === 0 && (
-                  <div className="text-center text-xs text-cosmos-500 py-4">暂无事件</div>
+                  <div className="text-center text-xs text-clay-500 py-4 font-body">暂无事件</div>
                 )}
               </div>
             </div>

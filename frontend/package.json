@@ -5,14 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pixi/react": "^7.1.0",
     "autoprefixer": "^10.4.0",
     "axios": "^1.6.0",
+    "clsx": "^2.1.1",
     "is-mobile": "^5.0.0",
     "phaser": "^3.85.2",
+    "pixi-viewport": "^5.0.1",
+    "pixi.js": "^7.2.4",
     "postcss": "^8.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

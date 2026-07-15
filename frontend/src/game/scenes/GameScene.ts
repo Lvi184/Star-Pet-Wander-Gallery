@@ -16,23 +16,16 @@ import {
 
 import { getSelectorData } from '../utils/utils';
 import { selectGameSetters } from '../zustand/game/selectGameData';
+import { selectMapSetters } from '../zustand/map/selectMapData';
 import { regionConfigs, npcData, portalLocations } from '../config';
-import { REGION_NAMES } from '../constants';
+import { REGION_NAMES, TILE_WIDTH, TILE_HEIGHT, GAME_SPEED } from '../constants';
 import { PetEventBridge } from '../bridges/PetEventBridge';
-import { EnvironmentFXSystem } from '../systems/EnvironmentFXSystem';
-import { eventBus, GAME_EVENTS } from '../eventBus';
-
-const EVENT_TYPE_MAP: Record<string, string> = {
-  meteor: 'meteor_shower',
-  tide: 'qi_tide',
-  starfall: 'star_fall',
-  shadow: 'shadow_storm',
-};
+import { findRoute, Point } from '../utils/pathfinding';
+import { loadAnimationSpritesheets, createAnimatedSprite, mapAnimatedObjects } from '../utils/animationHelpers';
 
 export default class GameScene extends Scene {
   private _currentRegion: string = 'qingqiu';
   private petEventBridge!: PetEventBridge;
-  private environmentFX!: EnvironmentFXSystem;
 
   constructor() {
     super('GameScene');
@@ -44,10 +37,38 @@ export default class GameScene extends Scene {
     }
   }
 
-  preload() {}
+  preload() {
+    loadAnimationSpritesheets(this);
+    this.loadPetImages();
+  }
+
+  private loadPetImages() {
+    const petImages = [
+      'pets/哈基咪.webp',
+      'pets/妙脆角咪.png',
+      'pets/月薪咪.webp',
+      'pets/香蕉猫.gif',
+      'pets/刀盾.JPG',
+      'pets/蜘蛛咪.webp',
+      'pets/绿色外星咪.webp',
+      'pets/月薪咪F4.webp',
+      'pets/月薪咪吓.webp',
+    ];
+    petImages.forEach((path) => {
+      const key = path.replace('/pets/', '').replace(/\.[^/.]+$/, '');
+      this.load.image(key, path);
+    });
+  }
 
   create() {
     const { addGameCameraSizeUpdateCallback } = getSelectorData(selectGameSetters);
+    const { setTilesets, setMapKey } = getSelectorData(selectMapSetters);
+    const regionConfig = regionConfigs[this._currentRegion];
+
+    if (regionConfig) {
+      setMapKey(regionConfig.mapKey);
+      setTilesets(regionConfig.tilesetKeys);
+    }
 
     handleCreateControls(this);
     handleCreateGroups(this);
@@ -76,27 +97,77 @@ export default class GameScene extends Scene {
     this.petEventBridge = new PetEventBridge(this);
     this.petEventBridge.init();
 
-    this.environmentFX = new EnvironmentFXSystem(this);
-    this.setupEnvironmentEventListener();
+    this.createAnimatedObjects();
+
+    this.setupClickToMove();
   }
 
-  private setupEnvironmentEventListener() {
-    eventBus.on(GAME_EVENTS.ENVIRONMENT_EVENT, (data: any) => {
-      const fxType = EVENT_TYPE_MAP[data.eventType] || data.eventType;
-      if (data.action === 'start') {
-        this.environmentFX.addEvent({
-          type: fxType,
-          intensity: 1,
-          duration: 4000,
-        });
-      } else if (data.action === 'end') {
-        this.environmentFX.removeEvent(fxType);
+  private createAnimatedObjects() {
+    const objects = mapAnimatedObjects[this._currentRegion] || [];
+    objects.forEach((obj) => {
+      createAnimatedSprite(this, obj.type, obj.x, obj.y, obj.scale);
+    });
+  }
+
+  private _movePath: Point[] = [];
+  private _moveSpeed = 3 * GAME_SPEED;
+
+  private setupClickToMove() {
+    this.input.on('pointerup', (pointer: any) => {
+      if (!this.heroSprite || !this.map) return;
+
+      if (this.wasDragging && this.wasDragging()) {
+        return;
+      }
+
+      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+
+      const start: Point = { x: this.heroSprite.x, y: this.heroSprite.y };
+      const destination: Point = { x: worldPoint.x, y: worldPoint.y };
+
+      const path = findRoute(
+        this.map,
+        start,
+        destination,
+        [],
+        TILE_WIDTH,
+        TILE_HEIGHT
+      );
+
+      if (path && path.length > 0) {
+        this._movePath = path;
       }
     });
+  }
 
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.environmentFX.destroy();
-    });
+  private moveAlongPath() {
+    if (!this.heroSprite || this._movePath.length === 0) return;
+
+    const target = this._movePath[0];
+    const dx = target.x - this.heroSprite.x;
+    const dy = target.y - this.heroSprite.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < 5) {
+      this._movePath.shift();
+      if (this._movePath.length === 0) {
+        this.heroSprite.anims.stop();
+      }
+      return;
+    }
+
+    const speed = this._moveSpeed;
+    const vx = (dx / distance) * speed;
+    const vy = (dy / distance) * speed;
+
+    this.heroSprite.x += vx;
+    this.heroSprite.y += vy;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      this.heroSprite.anims.play(dx > 0 ? `walk_right` : `walk_left`, true);
+    } else {
+      this.heroSprite.anims.play(dy > 0 ? `walk_down` : `walk_up`, true);
+    }
   }
 
   createNPCs() {
@@ -133,7 +204,11 @@ export default class GameScene extends Scene {
   }
 
   update(time: number, delta: number) {
-    handleHeroMovement(this);
+    if (this._movePath.length === 0) {
+      handleHeroMovement(this);
+    } else {
+      this.moveAlongPath();
+    }
 
     if (this.heroSprite) {
       this.heroSprite.update(time, delta);
@@ -147,10 +222,6 @@ export default class GameScene extends Scene {
 
     if (this.petEventBridge) {
       this.petEventBridge.updatePlayerControl(delta);
-    }
-
-    if (this.environmentFX) {
-      this.environmentFX.update();
     }
   }
 }

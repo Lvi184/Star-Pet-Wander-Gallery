@@ -238,11 +238,7 @@ export const handleObjectsLayer = (scene: any) => {
           scene.sprites.add(enemy);
           scene.enemies.add(enemy);
 
-          enemy.setInteractive();
-          enemy.on('pointerdown', () => {
-            const { setTextTexts } = getSelectorData(selectTextSetters);
-            setTextTexts([{ key: 'game_title', variables: {}, config: {} }]);
-          });
+          
 
           const enemyActionHeroCollider = scene.physics.add.overlap(
             enemy,
@@ -400,23 +396,78 @@ export const handleObjectsLayer = (scene: any) => {
 export const handleConfigureCamera = (scene: any) => {
   const { game } = scene.sys;
   const camera = scene.cameras.main;
+  const mapWidth = scene.map.widthInPixels;
+  const mapHeight = scene.map.heightInPixels;
+  const screenWidth = game.scale.gameSize.width;
+  const screenHeight = game.scale.gameSize.height;
 
-  camera.startFollow(scene.heroSprite, true);
-  camera.setFollowOffset(-scene.heroSprite.width, -scene.heroSprite.height);
-  camera.setBounds(
-    0,
-    0,
-    Math.max(scene.map.widthInPixels, game.scale.gameSize.width),
-    Math.max(scene.map.heightInPixels, game.scale.gameSize.height)
-  );
+  camera.setBounds(0, 0, mapWidth, mapHeight);
+  camera.setZoom(1);
+  camera.centerOn(mapWidth / 2, mapHeight / 2);
 
-  if (scene.map.widthInPixels < game.scale.gameSize.width) {
-    camera.setPosition((game.scale.gameSize.width - scene.map.widthInPixels) / 2);
-  }
+  const minZoom = 0.5;
+  const maxZoom = 3;
 
-  if (scene.map.heightInPixels < game.scale.gameSize.height) {
-    camera.setPosition(camera.x, (game.scale.gameSize.height - scene.map.heightInPixels) / 2);
-  }
+  const initialZoom = Math.max(screenWidth / mapWidth, screenHeight / mapHeight);
+  camera.setZoom(Math.max(minZoom, initialZoom));
+
+  let isDragging = false;
+  let wasDragging = false;
+  let startPointerX = 0;
+  let startPointerY = 0;
+  let dragStartScrollX = 0;
+  let dragStartScrollY = 0;
+
+  scene.input.on('pointerdown', (pointer: any) => {
+    isDragging = true;
+    wasDragging = false;
+    startPointerX = pointer.x;
+    startPointerY = pointer.y;
+    dragStartScrollX = camera.scrollX;
+    dragStartScrollY = camera.scrollY;
+  });
+
+  scene.input.on('pointermove', (pointer: any) => {
+    if (!isDragging) return;
+
+    const deltaX = pointer.x - startPointerX;
+    const deltaY = pointer.y - startPointerY;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (distance > 5) {
+      wasDragging = true;
+    }
+
+    const zoom = camera.zoom;
+    camera.scrollX = dragStartScrollX - deltaX / zoom;
+    camera.scrollY = dragStartScrollY - deltaY / zoom;
+  });
+
+  scene.input.on('pointerup', () => {
+    isDragging = false;
+  });
+
+  scene.input.on('pointerout', () => {
+    isDragging = false;
+  });
+
+  scene.isDragging = () => isDragging;
+  scene.wasDragging = () => wasDragging;
+
+  scene.input.on('wheel', (pointer: any, _gameObjects: any, _deltaX: number, deltaY: number, _deltaZ: number) => {
+    const zoom = camera.zoom;
+    const newZoom = Math.max(minZoom, Math.min(maxZoom, zoom - deltaY * 0.001));
+    
+    const worldX = camera.getWorldPoint(pointer.x, pointer.y).x;
+    const worldY = camera.getWorldPoint(pointer.x, pointer.y).y;
+    
+    camera.setZoom(newZoom);
+    
+    camera.scrollX = worldX - pointer.x / newZoom;
+    camera.scrollY = worldY - pointer.y / newZoom;
+  });
+
+  scene.cameraBounds = { minZoom, maxZoom };
 };
 
 export const handleCreateHeroAnimations = (scene: any) => {
@@ -559,22 +610,6 @@ export const createNPC = (scene: any, npcData: any) => {
   scene.npcs.add(npc);
 
   handleCreateNPCAnimations(scene, spriteKey);
-
-  npc.setInteractive();
-  npc.on('pointerdown', () => {
-    const { setDialogAction, setDialogMessages, setDialogCharacterName } = getSelectorData(selectDialogSetters);
-    const dialogMessages = getSelectorData(selectDialogMessages);
-
-    if (dialogMessages.length === 0) {
-      setDialogCharacterName(name);
-      setDialogMessages(dialog);
-      setDialogAction(() => {
-        setDialogCharacterName('');
-        setDialogMessages([]);
-        setDialogAction(null);
-      });
-    }
-  });
 
   const npcActionHeroCollider = scene.physics.add.overlap(
     npc,

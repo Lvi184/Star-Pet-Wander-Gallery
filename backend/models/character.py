@@ -21,7 +21,10 @@ class Character(Base):
     health = Column(Float, default=100.0)
     status = Column(String, default="normal")
     controller_type = Column(String, default="agent")
+    HEARTBEAT_TIMEOUT_SECONDS = 300
     controller_version = Column(Integer, default=0)
+    x = Column(Float, default=10.0)
+    y = Column(Float, default=10.0)
     last_active = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     last_player_heartbeat = Column(DateTime(timezone=True))
     affinity_map = Column(JSON, default=dict)
@@ -48,6 +51,8 @@ class Character(Base):
             "status": self.status,
             "controller_type": self.controller_type,
             "controller_version": self.controller_version,
+            "x": self.x,
+            "y": self.y,
             "last_active": self.last_active.isoformat() if self.last_active else None,
             "last_player_heartbeat": self.last_player_heartbeat.isoformat() if self.last_player_heartbeat else None,
             "affinity_map": self.affinity_map,

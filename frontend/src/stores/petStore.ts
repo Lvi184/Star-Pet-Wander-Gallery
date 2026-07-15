@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { eventBus, GAME_EVENTS } from '../game/eventBus'
+import { getMockPets, createMockPet } from './petMockData'
+import { useGameStore } from '../game/engine/gameStore'
 
 export interface Pet {
   id: string
@@ -17,10 +19,24 @@ export interface Pet {
   status: string
   controller_type: 'player' | 'agent'
   controller_version: number
+  x: number
+  y: number
   last_active: string | null
   last_player_heartbeat: string | null
   affinity_map: Record<string, number>
   goals: any[]
+}
+
+export interface ExploreEvent {
+  id: string
+  char_id: string
+  action_type: string
+  location: string
+  detail: string
+  cause_chain: string[]
+  result: Record<string, any>
+  timestamp: string | null
+  created_at: string | null
 }
 
 interface PetState {
@@ -32,12 +48,16 @@ interface PetState {
   wsReconnecting: boolean
   _ws: WebSocket | null
   _pollTimer: ReturnType<typeof setInterval> | null
+  events: ExploreEvent[]
 
   fetchPets: () => Promise<void>
   selectPet: (id: string) => void
   updatePet: (id: string, patch: Partial<Pet>) => void
   addPet: (pet: Pet) => void
   setError: (err: string | null) => void
+  fetchEvents: (charId: string) => Promise<void>
+  addEvent: (event: ExploreEvent) => void
+  clearEvents: () => void
 
   connectWebSocket: () => void
   disconnectWebSocket: () => void
@@ -48,7 +68,7 @@ interface PetState {
   createCharacter: (data: { name: string; species: string; personality?: string }) => Promise<Pet>
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE || '/'
 
 export const usePetStore = create<PetState>((set, get) => ({
   pets: [],
@@ -59,27 +79,59 @@ export const usePetStore = create<PetState>((set, get) => ({
   wsReconnecting: false,
   _ws: null,
   _pollTimer: null,
+  events: [],
 
   fetchPets: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await fetch(`${API_BASE}/character/user/demo-user`, {
+      const res = await fetch(`${API_BASE}character/user/demo-user`, {
         headers: { 'Content-Type': 'application/json' },
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      const pets: Pet[] = Array.isArray(data) ? data : data.characters || []
+      const remotePets: Pet[] = Array.isArray(data) ? data : data.value || data.characters || []
+      
+      const { pets: currentPets } = get()
+      const mergedPets = remotePets.map((remotePet) => {
+        const localPet = currentPets.find((p) => p.id === remotePet.id)
+        if (localPet && localPet.controller_version > (remotePet.controller_version || 0)) {
+          return { ...remotePet, controller_type: localPet.controller_type, controller_version: localPet.controller_version }
+        }
+        return remotePet
+      })
+      
       set({
-        pets,
-        selectedId: pets.length > 0 ? pets[0].id : null,
+        pets: mergedPets,
+        selectedId: mergedPets.length > 0 ? mergedPets[0].id : null,
         loading: false,
       })
-      if (pets.length > 0) {
-        eventBus.emit(GAME_EVENTS.SPAWN_PET, { pets })
-        eventBus.emit(GAME_EVENTS.FOCUS_PET, { petId: pets[0].id })
+      if (mergedPets.length > 0) {
+        eventBus.emit(GAME_EVENTS.SPAWN_PET, { pets: mergedPets })
+        eventBus.emit(GAME_EVENTS.FOCUS_PET, { petId: mergedPets[0].id })
       }
     } catch (err: any) {
-      set({ error: err.message || '获取宠物列表失败', loading: false })
+      console.warn('API不可用，使用Mock数据:', err.message)
+      const remotePets = getMockPets()
+      
+      const { pets: currentPets } = get()
+      const mergedPets = remotePets.map((remotePet) => {
+        const localPet = currentPets.find((p) => p.id === remotePet.id)
+        if (localPet && localPet.controller_version > (remotePet.controller_version || 0)) {
+          return { ...remotePet, controller_type: localPet.controller_type, controller_version: localPet.controller_version }
+        }
+        return remotePet
+      })
+      
+      set({
+        pets: mergedPets,
+        selectedId: mergedPets.length > 0 ? mergedPets[0].id : null,
+        loading: false,
+        error: null,
+      })
+      if (mergedPets.length > 0) {
+        eventBus.emit(GAME_EVENTS.SPAWN_PET, { pets: mergedPets })
+        eventBus.emit(GAME_EVENTS.FOCUS_PET, { petId: mergedPets[0].id })
+      }
     }
   },
 
@@ -98,6 +150,14 @@ export const usePetStore = create<PetState>((set, get) => ({
     if (patch.current_region) {
       eventBus.emit(GAME_EVENTS.MOVE_PET, { petId: id, region: patch.current_region })
     }
+    if (patch.x !== undefined || patch.y !== undefined) {
+      useGameStore.getState().updatePlayer(id, {
+        position: {
+          x: patch.x !== undefined ? patch.x : useGameStore.getState().players.get(id)?.position.x || 10,
+          y: patch.y !== undefined ? patch.y : useGameStore.getState().players.get(id)?.position.y || 10,
+        },
+      })
+    }
   },
 
   addPet: (pet: Pet) => {
@@ -106,6 +166,28 @@ export const usePetStore = create<PetState>((set, get) => ({
   },
 
   setError: (err: string | null) => set({ error: err }),
+
+  fetchEvents: async (charId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}character/${charId}/events`, {
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data: ExploreEvent[] = await res.json()
+      set({ events: data })
+    } catch (err: any) {
+      console.warn('获取探索事件失败:', err.message)
+      set({ events: [] })
+    }
+  },
+
+  addEvent: (event: ExploreEvent) => {
+    set((state) => ({
+      events: [event, ...state.events.slice(0, 19)],
+    }))
+  },
+
+  clearEvents: () => set({ events: [] }),
 
   connectWebSocket: () => {
     const { _ws, wsConnected } = get()
@@ -134,8 +216,16 @@ export const usePetStore = create<PetState>((set, get) => ({
         try {
           const msg = JSON.parse(event.data)
           if (msg.type === 'pet_update' && msg.pet_id) {
-            get().updatePet(msg.pet_id, msg.data || msg)
+            const updateData = msg.data || msg
+            get().updatePet(msg.pet_id, {
+              ...updateData,
+              x: updateData.x,
+              y: updateData.y,
+            })
             eventBus.emit(GAME_EVENTS.STATUS_UPDATE, msg)
+          } else if (msg.type === 'pet_event' && msg.event) {
+            get().addEvent(msg.event)
+            eventBus.emit(GAME_EVENTS.PET_EVENT, msg)
           } else if (msg.type === 'heartbeat') {
           }
         } catch (e) {}
@@ -192,44 +282,64 @@ export const usePetStore = create<PetState>((set, get) => ({
   },
 
   switchController: async (id: string, mode: 'player' | 'agent') => {
-    const endpoint = mode === 'player' ? 'takeover' : 'release'
-    const res = await fetch(`${API_BASE}/character/${id}/control/${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.detail || `切换失败 (${res.status})`)
+    try {
+      const endpoint = mode === 'player' ? 'takeover' : 'release'
+      const res = await fetch(`${API_BASE}character/${id}/control/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || `切换失败 (${res.status})`)
+      }
+      const data = await res.json()
+      get().updatePet(id, {
+        controller_type: data.controller_type,
+        controller_version: data.controller_version,
+      })
+      eventBus.emit(GAME_EVENTS.CONTROL_CHANGE, {
+        petId: id,
+        controllerType: data.controller_type,
+      })
+    } catch (err: any) {
+      console.warn('API不可用，使用Mock切换控制:', err.message)
+      get().updatePet(id, {
+        controller_type: mode,
+        controller_version: Date.now(),
+      })
+      eventBus.emit(GAME_EVENTS.CONTROL_CHANGE, {
+        petId: id,
+        controllerType: mode,
+      })
     }
-    const data = await res.json()
-    get().updatePet(id, {
-      controller_type: data.controller_type,
-      controller_version: data.controller_version,
-    })
-    eventBus.emit(GAME_EVENTS.CONTROL_CHANGE, {
-      petId: id,
-      controllerType: data.controller_type,
-    })
   },
 
   createCharacter: async (data) => {
-    const res = await fetch(`${API_BASE}/character`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: 'demo-user',
-        name: data.name,
-        species: data.species,
-        personality: data.personality || '灵动狡黠',
-      }),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.detail || `创建失败 (${res.status})`)
+    try {
+      const res = await fetch(`${API_BASE}character`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: 'demo-user',
+          name: data.name,
+          species: data.species,
+          personality: data.personality || '灵动狡黠',
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.detail || `创建失败 (${res.status})`)
+      }
+      const newPet = await res.json()
+      get().addPet(newPet)
+      get().subscribeCharacter(newPet.id)
+      return newPet
+    } catch (err: any) {
+      console.warn('API不可用，使用Mock创建宠物:', err.message)
+      const newPet = createMockPet(data)
+      get().addPet(newPet)
+      get().subscribeCharacter(newPet.id)
+      return newPet
     }
-    const newPet = await res.json()
-    get().addPet(newPet)
-    get().subscribeCharacter(newPet.id)
-    return newPet
   },
 }))

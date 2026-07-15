@@ -1,11 +1,14 @@
 import { eventBus, GAME_EVENTS } from '../eventBus';
 import { Scene } from 'phaser';
+import { usePetStore } from '../../stores/petStore';
 
 const SPECIES_COLORS: Record<string, number> = {
   fox: 0xff6b9d,
   dragon: 0x8b5cf6,
   phoenix: 0xf59e0b,
   turtle: 0x10b981,
+  tiger: 0xef4444,
+  qilin: 0xfbbf24,
   cat: 0xfbbf24,
   狐狸: 0xff6b9d,
   龙族: 0x8b5cf6,
@@ -14,11 +17,22 @@ const SPECIES_COLORS: Record<string, number> = {
   星灵猫: 0xfbbf24,
 };
 
+const SPECIES_IMAGES: Record<string, string[]> = {
+  fox: ['哈基咪', '妙脆角咪'],
+  dragon: ['香蕉猫', '月薪咪'],
+  phoenix: ['月薪咪F4', '绿色外星咪'],
+  turtle: ['刀盾', '蜘蛛咪'],
+  tiger: ['月薪咪吓', '哈基咪'],
+  qilin: ['妙脆角咪', '绿色外星咪'],
+  cat: ['哈基咪', '妙脆角咪'],
+};
+
 const FALLBACK_COLOR = 0xa78bfa;
 
 interface PetSprite {
   id: string;
   sprite: Phaser.GameObjects.Container;
+  imageSprite: Phaser.GameObjects.Sprite | null;
   region: string | null;
   tween?: Phaser.Tweens.Tween;
 }
@@ -49,6 +63,13 @@ export class PetEventBridge {
     this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
     this.scene.events.once(Phaser.Scenes.Events.DESTROY, this.destroy, this);
 
+    setTimeout(() => {
+      const { pets } = usePetStore.getState();
+      if (pets.length > 0) {
+        this.handleSpawnPet({ pets });
+      }
+    }, 500);
+
     eventBus.emit(GAME_EVENTS.SCENE_READY, { scene: 'GameScene' });
   }
 
@@ -58,32 +79,58 @@ export class PetEventBridge {
   }
 
   private handleSpawnPet(data: { pets: Array<{ id: string; name: string; species: string; current_region?: string | null }> }) {
+    console.log('PetEventBridge: handleSpawnPet called with', data.pets.length, 'pets');
     data.pets.forEach((pet) => {
       if (this.pets.has(pet.id)) return;
+      console.log('Spawning pet:', pet.name, 'species:', pet.species);
       const color = SPECIES_COLORS[pet.species] || FALLBACK_COLOR;
+      const images = SPECIES_IMAGES[pet.species] || SPECIES_IMAGES.cat;
+      const imageKey = images[Math.floor(Math.random() * images.length)];
+      console.log('Using image key:', imageKey, 'texture exists:', this.scene.textures.exists(imageKey));
 
       const container = this.scene.add.container(0, 0);
 
-      const glow = this.scene.add.circle(0, 0, 22, color, 0.25);
-      const body = this.scene.add.circle(0, 0, 14, color, 0.9);
-      body.setStrokeStyle(2, 0xffffff, 0.6);
-
-      container.add([glow, body]);
-      container.setSize(32, 32);
-
+      const glow = this.scene.add.circle(0, 0, 24, color, 0.3);
       this.scene.tweens.add({
         targets: glow,
-        scale: { from: 1, to: 1.3 },
-        alpha: { from: 0.3, to: 0.1 },
+        scale: { from: 1, to: 1.4 },
+        alpha: { from: 0.4, to: 0.1 },
         duration: 2000,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
 
+      let imageSprite: Phaser.GameObjects.Sprite | null = null;
+      if (this.scene.textures.exists(imageKey)) {
+        imageSprite = this.scene.add.sprite(0, 0, imageKey);
+        imageSprite.setScale(0.18);
+        imageSprite.setOrigin(0.5, 0.5);
+      }
+
+      if (!imageSprite) {
+        const body = this.scene.add.circle(0, 0, 14, color, 0.9);
+        body.setStrokeStyle(2, 0xffffff, 0.6);
+        container.add([glow, body]);
+      } else {
+        container.add([glow, imageSprite]);
+      }
+
+      container.setSize(32, 32);
+
+      const nameLabel = this.scene.add.text(0, -30, pet.name, {
+        fontSize: '12px',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 2,
+        fontFamily: '"Press Start 2P"',
+      }).setOrigin(0.5, 0);
+      container.add(nameLabel);
+
       this.pets.set(pet.id, {
         id: pet.id,
         sprite: container,
+        imageSprite,
         region: pet.current_region || null,
       });
 
@@ -167,6 +214,11 @@ export class PetEventBridge {
       const speed = this.playerSpeed * (delta / 1000);
       pet.sprite.x += vx * speed;
       pet.sprite.y += vy * speed;
+
+      if (pet.imageSprite) {
+        if (vx < 0) pet.imageSprite.flipX = true;
+        else if (vx > 0) pet.imageSprite.flipX = false;
+      }
 
       eventBus.emit(GAME_EVENTS.PET_ACTIVITY, {
         petId: this.playerPetId,

@@ -5,6 +5,7 @@ __pycache__/
 *.pyo
 .pytest_cache/
 .venv/
+backend/venv/
 .env.local
 .env.*.local
 node_modules/
@@ -19,3 +20,9 @@ temp-starpet/
 资源/参考世界/
 资源/参考游戏/
 资源/界面/
+*.zip
+*.tmp
+temp_sprite.png
+diagnose-sprite.js
+generate-sprite.js
+process-sprite.js

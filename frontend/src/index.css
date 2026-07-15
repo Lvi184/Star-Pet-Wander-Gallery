@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply bg-brown-900 text-brown-100;
+    image-rendering: pixelated;
+  }
+}
+
 @font-face {
   font-family: 'Upheaval Pro';
   src: url(/assets/fonts/upheaval_pro.ttf);
@@ -12,448 +19,171 @@
   src: url(/assets/fonts/vcr_osd_mono.ttf);
 }
 
-@font-face {
-  font-family: 'Munro';
-  src: url(/assets/game/fonts/Munro.ttf);
+.font-display {
+  font-family: 'Upheaval Pro', 'sans-serif';
 }
 
-@font-face {
-  font-family: 'Munro-Narrow';
-  src: url(/assets/game/fonts/Munro-Narrow.ttf);
+.font-body {
+  font-family: 'VCR OSD Mono', 'monospace';
 }
 
-@font-face {
-  font-family: 'Press Start 2P';
-  src: url(/assets/game/fonts/PressStart2P-Regular.ttf);
+.game-background {
+  background: linear-gradient(rgba(41, 41, 41, 0.9), rgba(41, 41, 41, 0.9)),
+    url(/assets/background.webp);
+  background-blend-mode: hard-light;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
-@layer base {
-  body {
-    @apply bg-bg text-ink font-sans leading-relaxed antialiased;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
+.game-title {
+  background: linear-gradient(to bottom, #fec742, #dd7c42);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0px 0.08em 0px #6e2146);
+}
 
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
+.pixel-box {
+  border-width: 12px;
+  border-image-source: url(/assets/ui/box.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 12.5%;
+  background: #181425;
+}
 
-  ::-webkit-scrollbar-track {
-    background: #1e1b4b;
-  }
+.pixel-card {
+  border-width: 12px;
+  border-image-source: url(/assets/ui/box.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 12.5%;
+  background: #1e293b;
+}
 
-  ::-webkit-scrollbar-thumb {
-    background: #6d28d9;
-    border-radius: 4px;
-  }
+.pixel-button {
+  border-width: 1em;
+  border-image-source: url(/assets/ui/button.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 25%;
+  cursor: pointer;
+  background: #3a4466;
+  transition: all 0.1s;
+  font-family: 'Upheaval Pro', sans-serif;
+  letter-spacing: 0.05em;
+}
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: #8b5cf6;
+.pixel-button span {
+  display: inline-block;
+  transform: translateY(-15%);
+}
+
+.pixel-button:active {
+  transform: translateY(2px);
+}
+
+.shadow-solid {
+  text-shadow: 0 0.1em 0 rgba(0, 0, 0, 0.5);
+}
+
+.game-progress-bar {
+  border: 5px solid #171421;
+}
+
+@keyframes moveStripes {
+  to {
+    background-position: calc(100% + 28px) 0;
   }
 }
 
-@layer components {
-  .glass {
-    background: rgba(30, 27, 75, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 0.75rem;
-  }
-
-  .glass-dark {
-    background: rgba(15, 10, 40, 0.75);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(139, 92, 246, 0.4);
-    border-radius: 0.75rem;
-  }
-
-  .glass-fallback {
-    background: rgba(15, 10, 30, 0.9);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 0.75rem;
-  }
-
-  .starfield {
-    position: relative;
-    overflow: hidden;
-    background:
-      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.8) 50%, transparent 100%),
-      radial-gradient(1px 1px at 70% 80%, rgba(255,255,255,0.6) 50%, transparent 100%),
-      radial-gradient(2px 2px at 40% 60%, rgba(196,181,253,0.7) 50%, transparent 100%),
-      radial-gradient(1.5px 1.5px at 85% 20%, rgba(255,255,255,0.5) 50%, transparent 100%),
-      radial-gradient(1px 1px at 10% 90%, rgba(196,181,253,0.6) 50%, transparent 100%),
-      radial-gradient(2px 2px at 55% 15%, rgba(255,255,255,0.7) 50%, transparent 100%),
-      radial-gradient(1px 1px at 90% 50%, rgba(255,255,255,0.5) 50%, transparent 100%),
-      radial-gradient(1.5px 1.5px at 30% 45%, rgba(196,181,253,0.5) 50%, transparent 100%),
-      radial-gradient(1px 1px at 60% 75%, rgba(255,255,255,0.4) 50%, transparent 100%),
-      radial-gradient(2px 2px at 5% 50%, rgba(255,255,255,0.6) 50%, transparent 100%),
-      linear-gradient(180deg, #2e1065 0%, #1e0e47 50%, #0f0628 100%);
-    pointer-events: none;
-  }
-
-  .starfield::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.5) 50%, transparent 100%),
-      radial-gradient(1px 1px at 80% 60%, rgba(196,181,253,0.5) 50%, transparent 100%),
-      radial-gradient(1px 1px at 50% 85%, rgba(255,255,255,0.4) 50%, transparent 100%);
-    animation: twinkle 4s ease-in-out infinite alternate;
-    pointer-events: none;
-  }
-
-  @keyframes twinkle {
-    0% { opacity: 0.4; }
-    100% { opacity: 1; }
-  }
-
-  .text-gradient-cosmos {
-    background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #fbbf24 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .text-gradient-gold {
-    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 50%, #d97706 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .bar-shine {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .bar-shine::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: bar-shine 2.5s ease-in-out infinite;
-  }
-
-  @keyframes bar-shine {
-    0% { left: -100%; }
-    100% { left: 100%; }
-  }
-
-  .destiny-lv1 { color: #9ca3af; }
-  .destiny-lv2 { color: #6ee7b7; }
-  .destiny-lv3 { color: #60a5fa; }
-  .destiny-lv4 { color: #a78bfa; }
-  .destiny-lv5 { color: #fbbf24; }
-
-  .destiny-bg-lv1 { background: rgba(156,163,175,0.15); border-color: rgba(156,163,175,0.3); }
-  .destiny-bg-lv2 { background: rgba(110,231,183,0.15); border-color: rgba(110,231,183,0.3); }
-  .destiny-bg-lv3 { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.3); }
-  .destiny-bg-lv4 { background: rgba(167,139,250,0.15); border-color: rgba(167,139,250,0.3); }
-  .destiny-bg-lv5 { background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.3); }
-
-  .mood-happy { color: #fbbf24; }
-  .mood-calm { color: #60a5fa; }
-  .mood-excited { color: #f87171; }
-  .mood-sad { color: #94a3b8; }
-  .mood-curious { color: #a78bfa; }
-
-  .pixel-card {
-    border-width: 12px;
-    border-image-source: url(/assets/ui/box.svg);
-    border-image-repeat: stretch;
-    border-image-slice: 12.5%;
-    background: #1e293b;
-  }
-
-  .pixel-box {
-    border-width: 12px;
-    border-image-source: url(/assets/ui/box.svg);
-    border-image-repeat: stretch;
-    border-image-slice: 12.5%;
-  }
-
-  .pixel-desc {
-    border-width: 56px;
-    border-image-source: url(/assets/ui/desc.svg);
-    border-image-repeat: stretch;
-    border-image-slice: 28%;
-  }
-
-  .pixel-chats {
-    border-width: 24px;
-    border-image-source: url(/assets/ui/chats.svg);
-    border-image-repeat: stretch;
-    border-image-slice: 40%;
-  }
-
-  .pixel-button {
-    border-width: 1em;
-    border-image-source: url(/assets/ui/button.svg);
-    border-image-repeat: stretch;
-    border-image-slice: 25%;
-    cursor: pointer;
-    background: #3a3247;
-    transition: all 0.1s ease;
-  }
-
-  .pixel-button:hover {
-    opacity: 0.8;
-  }
-
-  .pixel-button:active {
-    border-image-source: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='1' y='2' width='14' height='13' fill='%23181425'/%3E%3Crect x='2' y='1' width='12' height='15' fill='%23181425'/%3E%3Crect y='3' width='16' height='11' fill='%23181425'/%3E%3Crect x='2' y='14' width='12' height='1' fill='%23262B44'/%3E%3Crect x='1' y='3' width='14' height='11' fill='%233A4466'/%3E%3Crect x='2' y='2' width='12' height='9' fill='%233A4466'/%3E%3Crect x='1' y='13' width='1' height='1' fill='%23262B44'/%3E%3Crect x='14' y='13' width='1' height='1' fill='%23262B44'/%3E%3C/svg%3E%0A");
-    transform: translateY(2px);
-  }
-
-  .pixel-frame {
-    border-width: 36px;
-    border-image-source: url(/assets/ui/frame.svg);
-    border-image-repeat: stretch;
-    border-image-slice: 25%;
-  }
-
-  .pixel-tag {
-    @apply inline-block px-3 py-1 rounded-md text-xs font-semibold;
-    border: 2px solid #334155;
-    background: rgba(56, 189, 248, 0.1);
-  }
-
-  .pixelated {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-  }
-
-  .card {
-    @apply bg-bg2 border border-rule rounded-xl p-5 transition hover:-translate-y-1 hover:border-accent;
-  }
-
-  .tag {
-    @apply inline-block px-3 py-1 rounded-md text-xs font-semibold;
-  }
-
-  .glow-text {
-    text-shadow: 0 0.1em 0 rgba(0, 0, 0, 0.5), 0 0 10px rgba(56, 189, 248, 0.5);
-  }
-
-  .game-title {
-    background: linear-gradient(to bottom, #fec742, #dd7c42);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0px 0.08em 0px #6e2146);
-  }
-
-  .progress-bar {
-    border: 3px solid #171421;
-    background: #1e293b;
-  }
-
-  .progress-bar-fill {
-    background: repeating-linear-gradient(135deg, #38bdf8, #38bdf8 5px, #2563eb 5px, #2563eb 10px);
-    background-size: 200% 100%;
-    animation: moveStripes 1s linear infinite;
-  }
-
-  @keyframes moveStripes {
-    to {
-      background-position: calc(100% + 28px) 0;
-    }
-  }
-
-  .game-panel {
-    @apply bg-gradient-to-br from-clay-800 to-brown-800 rounded-lg border-4 border-clay-600;
-    box-shadow: 
-      inset 0 0 20px rgba(0,0,0,0.3),
-      0 4px 0 rgba(0,0,0,0.3);
-  }
-
-  .game-button {
-    @apply bg-gradient-to-b from-clay-600 to-clay-800 text-white px-4 py-2 rounded border-2 border-clay-500;
-    @apply font-display text-sm tracking-wider uppercase;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.3);
-    transition: all 0.1s;
-  }
-
-  .game-button:hover {
-    @apply bg-gradient-to-b from-clay-500 to-clay-700;
-    transform: translateY(-1px);
-    box-shadow: 0 5px 0 rgba(0,0,0,0.3);
-  }
-
-  .game-button:active {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 rgba(0,0,0,0.3);
-  }
-
-  .game-label {
-    @apply text-xs font-body text-muted uppercase tracking-wider;
-  }
-
-  .game-stat {
-    @apply font-display text-2xl text-white;
-    text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
-  }
-
-  .heart-container {
-    display: flex;
-    gap: 2px;
-  }
-
-  .heart {
-    width: 16px;
-    height: 16px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    image-rendering: pixelated;
-  }
-
-  .heart.full {
-    background-image: url(/assets/game/images/heart_full.png);
-  }
-
-  .heart.empty {
-    background-image: url(/assets/game/images/heart_empty.png);
-  }
-
-  .heart.half {
-    background-image: url(/assets/game/images/heart_half.png);
-  }
-
-  .star-container {
-    display: flex;
-    gap: 2px;
-  }
-
-  .star {
-    width: 16px;
-    height: 16px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    image-rendering: pixelated;
-  }
-
-  .star.filled {
-    background-image: url(/assets/game/images/crystal.png);
-  }
-
-  .star.empty {
-    opacity: 0.3;
-    background-image: url(/assets/game/images/crystal.png);
-  }
-
-  .map-tile {
-    @apply relative overflow-hidden rounded border-2 border-clay-600 transition-all duration-300;
-    aspect-ratio: 1;
-  }
-
-  .map-tile:hover {
-    @apply border-accent transform scale-105;
-    z-index: 10;
-  }
-
-  .diary-entry {
-    @apply bg-bg2 rounded-lg border border-rule p-4 transition-all duration-300;
-  }
-
-  .diary-entry:hover {
-    @apply border-accent bg-clay-800/50;
-  }
-
-  .notification-item {
-    @apply bg-bg2 rounded-lg border border-rule p-3 flex items-start gap-3 transition-all;
-  }
-
-  .notification-item:hover {
-    @apply border-accent;
-  }
-
-  .dialog-box {
-    @apply bg-clay-800/95 border-4 border-clay-600 rounded-lg p-4;
-    box-shadow: 
-      inset 0 0 20px rgba(0,0,0,0.5),
-      0 8px 0 rgba(0,0,0,0.3),
-      0 0 30px rgba(56,189,248,0.2);
-  }
-
-  .typing-cursor::after {
-    content: '|';
-    animation: blink 1s step-end infinite;
-  }
-
-  @keyframes blink {
-    50% { opacity: 0; }
-  }
-
-  .float-animation {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
-  .bounce-animation {
-    animation: bounce 2s ease-in-out infinite;
-  }
-
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-  }
-
-  .sparkle-animation {
-    animation: sparkle 1.5s ease-in-out infinite;
-  }
-
-  @keyframes sparkle {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.2); }
-  }
-
-  .pulse-glow {
-    animation: pulseGlow 2s ease-in-out infinite;
-  }
-
-  @keyframes pulseGlow {
-    0%, 100% { box-shadow: 0 0 10px rgba(56,189,248,0.5); }
-    50% { box-shadow: 0 0 25px rgba(56,189,248,0.8); }
-  }
-
-  .low-end-device .glass {
-    background: rgba(15, 10, 30, 0.95);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border-color: rgba(139, 92, 246, 0.2);
-  }
-
-  .low-end-device .glass-dark {
-    background: rgba(10, 8, 25, 0.95);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border-color: rgba(139, 92, 246, 0.25);
-  }
-
-  .low-end-device .starfield::after {
-    animation: none;
-    opacity: 0.6;
-  }
-
-  .low-end-device .bar-shine::after {
-    animation: none;
-  }
-
-  .low-end-device .float-animation,
-  .low-end-device .bounce-animation,
-  .low-end-device .sparkle-animation,
-  .low-end-device .pulse-glow {
-    animation: none;
-  }
+.game-progress-bar-progress {
+  background: repeating-linear-gradient(135deg, #38bdf8, #38bdf8 5px, #2563eb 5px, #2563eb 10px);
+  background-size: 200% 100%;
+  animation: moveStripes 0.5s linear infinite;
+}
+
+.game-button {
+  background: linear-gradient(to bottom, #5A6988, #3A4466);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 2px solid #5A6988;
+  font-family: 'Upheaval Pro', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+  transition: all 0.1s;
+}
+
+.game-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+
+.destiny-lv1 { color: #9ca3af; }
+.destiny-lv2 { color: #6ee7b7; }
+.destiny-lv3 { color: #60a5fa; }
+.destiny-lv4 { color: #a78bfa; }
+.destiny-lv5 { color: #fbbf24; }
+
+.destiny-bg-lv1 { background: rgba(156,163,175,0.15); border-color: rgba(156,163,175,0.3); }
+.destiny-bg-lv2 { background: rgba(110,231,183,0.15); border-color: rgba(110,231,183,0.3); }
+.destiny-bg-lv3 { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.3); }
+.destiny-bg-lv4 { background: rgba(167,139,250,0.15); border-color: rgba(167,139,250,0.3); }
+.destiny-bg-lv5 { background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.3); }
+
+.mood-happy { color: #fbbf24; }
+.mood-calm { color: #60a5fa; }
+.mood-excited { color: #f87171; }
+.mood-sad { color: #94a3b8; }
+.mood-curious { color: #a78bfa; }
+
+.box {
+  border-width: 12px;
+  border-image-source: url(/ai-town/assets/ui/box.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 12.5%;
+  background: #181425;
+}
+
+.button {
+  border-width: 1em;
+  border-image-source: url(/ai-town/assets/ui/button.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 25%;
+  cursor: pointer;
+  background: #3a4466;
+  transition: all 0.1s;
+  font-family: 'Upheaval Pro', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.button:active {
+  transform: translateY(2px);
+}
+
+.chats {
+  border-width: 12px;
+  border-image-source: url(/ai-town/assets/ui/chats.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 12.5%;
+}
+
+.bubble {
+  border-width: 12px;
+  border-image-source: url(/ai-town/assets/ui/bubble-left.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 12.5%;
+}
+
+.bubble-mine {
+  border-image-source: url(/ai-town/assets/ui/bubble-right.svg);
+}
+
+.desc {
+  border-width: 12px;
+  border-image-source: url(/ai-town/assets/ui/desc.svg);
+  border-image-repeat: stretch;
+  border-image-slice: 12.5%;
 }

@@ -70,7 +70,7 @@ class PetEvent(Base):
             "cause_chain": self.cause_chain,
             "result": self.result,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else datetime.now().isoformat(),
         }
 
 

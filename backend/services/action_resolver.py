@@ -26,7 +26,7 @@ class ActionResult:
 
 
 class ActionResolver:
-    ACTIONS = ["explore", "collect", "move", "rest", "fight", "social", "cultivate"]
+    ACTIONS = ["explore", "collect", "move", "rest", "fight", "social", "cultivate", "discover"]
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -49,6 +49,8 @@ class ActionResolver:
             result = await self._handle_move(character, action, cause_chain, state_changes)
         elif action.action_type == "explore":
             result = await self._handle_explore(character, action, cause_chain, state_changes)
+        elif action.action_type == "discover":
+            result = await self._handle_discover(character, action, cause_chain, state_changes)
         elif action.action_type == "collect":
             result = await self._handle_collect(character, action, cause_chain, state_changes)
         elif action.action_type == "rest":
@@ -87,13 +89,18 @@ class ActionResolver:
     async def _handle_explore(self, character: Character, action: ActionInput,
                               cause_chain: list, state_changes: Dict) -> ActionResult:
         region = action.kwargs.get("region", character.current_region)
-        cause_chain.append(f"探索{region}")
+        event_desc = action.kwargs.get("event_desc", f"探索{region}")
+        cause_chain.append(event_desc)
 
-        if character.energy < 15:
+        energy_cost = action.kwargs.get("energy_change", -15)
+        mood_change = action.kwargs.get("mood_change", 5)
+
+        if character.energy < abs(energy_cost):
             cause_chain.append("精力不足")
             return ActionResult(success=False, message="精力不足，无法探索")
 
-        state_changes["energy"] = character.energy - 15
+        state_changes["energy"] = max(0, min(100, character.energy + energy_cost))
+        state_changes["mood"] = max(0, min(100, character.mood + mood_change))
         
         from services.destiny_system import DestinySystem
         destiny_system = DestinySystem(self.db)
@@ -101,7 +108,25 @@ class ActionResolver:
         if fate_level in ["dangerous", "disaster"]:
             cause_chain.append(f"区域命运: {fate_level}")
 
-        return ActionResult(success=True, message=f"探索{region}")
+        return ActionResult(success=True, message=event_desc)
+
+    async def _handle_discover(self, character: Character, action: ActionInput,
+                               cause_chain: list, state_changes: Dict) -> ActionResult:
+        region = action.kwargs.get("region", character.current_region)
+        event_desc = action.kwargs.get("event_desc", f"在{region}发现了一处神秘景观")
+        cause_chain.append(event_desc)
+
+        energy_cost = action.kwargs.get("energy_change", -8)
+        mood_change = action.kwargs.get("mood_change", 10)
+
+        if character.energy < abs(energy_cost):
+            cause_chain.append("精力不足")
+            return ActionResult(success=False, message="精力不足，无法探索")
+
+        state_changes["energy"] = max(0, min(100, character.energy + energy_cost))
+        state_changes["mood"] = max(0, min(100, character.mood + mood_change))
+
+        return ActionResult(success=True, message=event_desc)
 
     async def _handle_collect(self, character: Character, action: ActionInput,
                               cause_chain: list, state_changes: Dict) -> ActionResult:
@@ -136,6 +161,7 @@ class ActionResolver:
 
     async def _create_event_record(self, action: ActionInput, character: Character,
                                    cause_chain: list, state_changes: Dict) -> PetEvent:
+        now = datetime.now()
         event = PetEvent(
             id=PetEvent.generate_id(),
             char_id=action.char_id,
@@ -144,10 +170,10 @@ class ActionResolver:
             detail=f"{action.action_type}: {action.target or action.kwargs}",
             cause_chain=cause_chain,
             result=state_changes,
-            timestamp=datetime.now()
+            timestamp=now,
+            created_at=now
         )
         self.db.add(event)
-        await self.db.flush()
         return event
 
     async def _update_character_state(self, character: Character, state_changes: Dict):
@@ -155,5 +181,3 @@ class ActionResolver:
             setattr(character, key, value)
         
         character.last_active = datetime.now()
-        await self.db.commit()
-        await self.db.refresh(character)
