@@ -43,6 +43,8 @@
 
 ## 3. Demo 体验地址
 
+**代码仓库：** https://github.com/Lvi184/Star-Pet-Wander-Gallery
+
 **开发环境体验：** http://localhost:3003/
 
 **操作指南：**
@@ -56,6 +58,23 @@
 - 选择"哈基咪"角色，点击地图移动 → 体验在线操控
 - 点击 🤖 切换 AI 模式 → 观察宠物自主探索
 - 查看右侧探索记录 → 见证宠物的冒险故事
+
+**本地运行方式：**
+```bash
+# 克隆仓库
+git clone https://github.com/Lvi184/Star-Pet-Wander-Gallery.git
+cd Star-Pet-Wander-Gallery
+
+# 前端
+cd frontend
+npm install
+npm run dev
+
+# 后端（可选）
+cd backend
+pip install -r requirements.txt
+python main.py
+```
 
 ---
 
