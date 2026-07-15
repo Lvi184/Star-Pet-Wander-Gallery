@@ -2,7 +2,7 @@
 
 > 🌌 AI 驱动的自主生命体养成游戏 —— 陪伴者而非照顾者
 
-![项目封面](https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20anime%20style%20pet%20cat%20exploring%20fantasy%20world%20with%20stars%20and%20mountains%2C%20warm%20colors%2C%20pixel%20art%20style&image_size=landscape_16_9)
+![项目封面](assets/hero_1280x720.jpg)
 
 ## 🎮 项目简介
 
